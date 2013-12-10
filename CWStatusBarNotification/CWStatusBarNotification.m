@@ -28,7 +28,7 @@
     self = [super init];
     if (self) {
         // set defaults
-        self.notificationLabelBackgroundColor = [[UIApplication sharedApplication] delegate].window.tintColor;
+            self.notificationLabelBackgroundColor = [[UIApplication sharedApplication] delegate].window.tintColor;
         self.notificationLabelTextColor = [UIColor whiteColor];
         self.notificationStyle = CWNotificationStyleStatusBarNotification;
         self.notificationAnimationInStyle = CWNotificationAnimationStyleBottom;
@@ -254,7 +254,11 @@
 
 }
 
-- (void)dismissNotification
+- (void)dismissNotification {
+    [self dismissNotificationWithCompletion:nil];
+}
+
+- (void)dismissNotificationWithCompletion:(void (^)(void))completion
 {
     if (self.notificationIsShowing) {
         [self secondFrameChange];
@@ -266,6 +270,9 @@
             self.notificationWindow = nil;
             self.notificationIsShowing = NO;
             [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidChangeStatusBarOrientationNotification object:nil];
+            if (completion) {
+                completion();
+            }
         }];
     }
 }
