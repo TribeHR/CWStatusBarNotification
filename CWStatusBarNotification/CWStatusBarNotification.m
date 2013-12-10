@@ -18,7 +18,7 @@
 
 @implementation CWStatusBarNotification
 
-@synthesize notificationLabel, notificationLabelBackgroundColor, notificationLabelTextColor, notificationWindow;
+@synthesize notificationLabel, notificationWindow;
 
 @synthesize statusBarView;
 
@@ -28,7 +28,13 @@
     self = [super init];
     if (self) {
         // set defaults
-            self.notificationLabelBackgroundColor = [[UIApplication sharedApplication] delegate].window.tintColor;
+        self.notificationLabel = [ScrollLabel new];
+        self.notificationLabel.textAlignment = NSTextAlignmentCenter;
+        self.notificationLabel.adjustsFontSizeToFitWidth = NO;
+        self.notificationLabel.font = [UIFont systemFontOfSize:FONT_SIZE];
+        
+        
+        self.notificationLabelBackgroundColor = [[UIApplication sharedApplication] delegate].window.tintColor;
         self.notificationLabelTextColor = [UIColor whiteColor];
         self.notificationStyle = CWNotificationStyleStatusBarNotification;
         self.notificationAnimationInStyle = CWNotificationAnimationStyleBottom;
@@ -36,6 +42,24 @@
         self.notificationAnimationType = CWNotificationAnimationTypeReplace;
     }
     return self;
+}
+
+#pragma mark - properties
+
+- (UIColor *)notificationLabelBackgroundColor {
+    return self.notificationLabel.backgroundColor;
+}
+
+- (void)setNotificationLabelBackgroundColor:(UIColor *)notificationLabelBackgroundColor {
+    self.notificationLabel.backgroundColor = notificationLabelBackgroundColor;
+}
+
+- (UIColor *)notificationLabelTextColor {
+    return self.notificationLabel.textColor;
+}
+
+- (void)setNotificationLabelTextColor:(UIColor *)notificationLabelTextColor {
+    self.notificationLabel.textColor = notificationLabelTextColor;
 }
 
 # pragma mark - dimensions
@@ -106,16 +130,10 @@
 
 # pragma mark - display helpers
 
-- (void)createNotificationLabelWithMessage:(NSString *)message
+- (void)updateNotificationLabelWithMessage:(NSString *)message
 {
-    self.notificationLabel = [ScrollLabel new];
-    self.notificationLabel.numberOfLines = self.multiline ? 0 : 1;
     self.notificationLabel.text = message;
-    self.notificationLabel.textAlignment = NSTextAlignmentCenter;
-    self.notificationLabel.adjustsFontSizeToFitWidth = NO;
-    self.notificationLabel.font = [UIFont systemFontOfSize:FONT_SIZE];
-    self.notificationLabel.backgroundColor = self.notificationLabelBackgroundColor;
-    self.notificationLabel.textColor = self.notificationLabelTextColor;
+    self.notificationLabel.numberOfLines = self.multiline ? 0 : 1;
     switch (self.notificationAnimationInStyle) {
         case CWNotificationAnimationStyleTop:
             self.notificationLabel.frame = [self getNotificationLabelTopFrame];
@@ -135,12 +153,14 @@
 
 - (void)createNotificationWindow
 {
-    self.notificationWindow = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-    self.notificationWindow.backgroundColor = [UIColor clearColor];
-    self.notificationWindow.userInteractionEnabled = NO;
-    self.notificationWindow.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    self.notificationWindow.windowLevel = UIWindowLevelStatusBar;
-    self.notificationWindow.rootViewController = [UIViewController new];
+    if (!self.notificationWindow) {
+        self.notificationWindow = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+        self.notificationWindow.backgroundColor = [UIColor clearColor];
+        self.notificationWindow.userInteractionEnabled = NO;
+        self.notificationWindow.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        self.notificationWindow.windowLevel = UIWindowLevelStatusBar;
+        self.notificationWindow.rootViewController = [UIViewController new];
+    }
     self.notificationWindow.rootViewController.view.bounds = [self getNotificationLabelFrame];
 }
 
@@ -227,7 +247,7 @@
         [self createNotificationWindow];
         
         // create UILabel
-        [self createNotificationLabelWithMessage:message];
+        [self updateNotificationLabelWithMessage:message];
         
         // create status bar view
         [self createStatusBarView];
@@ -250,8 +270,10 @@
                 [completion invoke];
             });
         }];
+    } else {
+        self.notificationLabel.text = message;
     }
-
+    
 }
 
 - (void)dismissNotification {
