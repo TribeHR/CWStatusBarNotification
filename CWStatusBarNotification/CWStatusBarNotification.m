@@ -152,7 +152,7 @@ static void cancel_delayed_block(CWDelayedBlockHandle delayedHandle)
 
 @implementation CWStatusBarNotification
 
-@synthesize notificationLabel, notificationLabelBackgroundColor, notificationLabelTextColor, notificationLabelFont, notificationWindow, customView;
+@synthesize notificationLabel, notificationWindow, customView;
 
 @synthesize statusBarView;
 
@@ -163,6 +163,10 @@ static void cancel_delayed_block(CWDelayedBlockHandle delayedHandle)
     self = [super init];
     if (self) {
         // set defaults
+        self.notificationLabel = [ScrollLabel new];
+        self.notificationLabel.textAlignment = NSTextAlignmentCenter;
+        self.notificationLabel.adjustsFontSizeToFitWidth = NO;
+        
         self.notificationLabelBackgroundColor = [[UIApplication sharedApplication] delegate].window.tintColor;
         self.notificationLabelTextColor = [UIColor whiteColor];
         self.notificationLabelFont = [UIFont systemFontOfSize:FONT_SIZE];
@@ -186,6 +190,32 @@ static void cancel_delayed_block(CWDelayedBlockHandle delayedHandle)
         };
     }
     return self;
+}
+
+#pragma mark - properties
+
+- (UIColor *)notificationLabelBackgroundColor {
+    return self.notificationLabel.backgroundColor;
+}
+
+- (void)setNotificationLabelBackgroundColor:(UIColor *)notificationLabelBackgroundColor {
+    self.notificationLabel.backgroundColor = notificationLabelBackgroundColor;
+}
+
+- (UIColor *)notificationLabelTextColor {
+    return self.notificationLabel.textColor;
+}
+
+- (void)setNotificationLabelTextColor:(UIColor *)notificationLabelTextColor {
+    self.notificationLabel.textColor = notificationLabelTextColor;
+}
+
+- (UIFont *)notificationLabelFont {
+    return self.notificationLabel.font;
+}
+
+- (void)setNotificationLabelFont:(UIFont *)notificationLabelFont {
+    self.notificationLabel.font = notificationLabelFont;
 }
 
 # pragma mark - dimensions
@@ -303,16 +333,10 @@ static void cancel_delayed_block(CWDelayedBlockHandle delayedHandle)
     }
 }
 
-- (void)createNotificationLabelWithMessage:(NSString *)message
+- (void)updateNotificationLabelWithMessage:(NSString *)message
 {
-    self.notificationLabel = [ScrollLabel new];
-    self.notificationLabel.numberOfLines = self.multiline ? 0 : 1;
     self.notificationLabel.text = message;
-    self.notificationLabel.textAlignment = NSTextAlignmentCenter;
-    self.notificationLabel.adjustsFontSizeToFitWidth = NO;
-    self.notificationLabel.font = self.notificationLabelFont;
-    self.notificationLabel.backgroundColor = self.notificationLabelBackgroundColor;
-    self.notificationLabel.textColor = self.notificationLabelTextColor;
+    self.notificationLabel.numberOfLines = self.multiline ? 0 : 1;
     [self setupNotificationView:self.notificationLabel];
 }
 
@@ -335,12 +359,14 @@ static void cancel_delayed_block(CWDelayedBlockHandle delayedHandle)
 
 - (void)createNotificationWindow
 {
-    self.notificationWindow = [[CWWindowContainer alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-    self.notificationWindow.backgroundColor = [UIColor clearColor];
-    self.notificationWindow.userInteractionEnabled = YES;
-    self.notificationWindow.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    self.notificationWindow.windowLevel = UIWindowLevelStatusBar;
-    self.notificationWindow.rootViewController = [UIViewController new];
+	if (!self.notificationWindow) {
+	    self.notificationWindow = [[CWWindowContainer alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    	self.notificationWindow.backgroundColor = [UIColor clearColor];
+	    self.notificationWindow.userInteractionEnabled = YES;
+    	self.notificationWindow.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+	    self.notificationWindow.windowLevel = UIWindowLevelStatusBar;
+    	self.notificationWindow.rootViewController = [UIViewController new];
+	}
     self.notificationWindow.notificationHeight = [self getNotificationLabelHeight];
 }
 
@@ -431,7 +457,7 @@ static void cancel_delayed_block(CWDelayedBlockHandle delayedHandle)
         [self createNotificationWindow];
 
         // create ScrollLabel
-        [self createNotificationLabelWithMessage:message];
+        [self updateNotificationLabelWithMessage:message];
 
         // create status bar view
         [self createStatusBarView];
@@ -456,6 +482,8 @@ static void cancel_delayed_block(CWDelayedBlockHandle delayedHandle)
                 [completion invoke];
             });
         }];
+    } else {
+        self.notificationLabel.text = message;
     }
 }
 
