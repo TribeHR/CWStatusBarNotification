@@ -7,6 +7,7 @@
 ## Requirements
 
 `CWStatusBarNotification` uses ARC and requires iOS 7.0+.
+Note that we've modified the Podfile to allow this library's inclusion in projects that support iOS 6; the developer is responsible for not calling any part of this library on a device running iOS 6.
 
 Works for iPhone and iPad.
 
