@@ -162,11 +162,18 @@ static void cancel_delayed_block(CWDelayedBlockHandle delayedHandle)
 {
     self = [super init];
     if (self) {
-        // set defaults
         self.notificationLabel = [ScrollLabel new];
         self.notificationLabel.textAlignment = NSTextAlignmentCenter;
         self.notificationLabel.adjustsFontSizeToFitWidth = NO;
         
+        self.statusBarView = [[UIView alloc] initWithFrame:[self getNotificationLabelFrame]];
+        self.statusBarView.clipsToBounds = YES;
+        if (self.notificationAnimationType == CWNotificationAnimationTypeReplace) {
+            UIView *statusBarImageView = [[UIScreen mainScreen] snapshotViewAfterScreenUpdates:YES];
+            [self.statusBarView addSubview:statusBarImageView];
+        }
+        
+        // set defaults
         self.notificationLabelBackgroundColor = [[UIApplication sharedApplication] delegate].window.tintColor;
         self.notificationLabelTextColor = [UIColor whiteColor];
         self.notificationLabelFont = [UIFont systemFontOfSize:FONT_SIZE];
@@ -359,29 +366,20 @@ static void cancel_delayed_block(CWDelayedBlockHandle delayedHandle)
 
 - (void)createNotificationWindow
 {
-	if (!self.notificationWindow) {
-	    self.notificationWindow = [[CWWindowContainer alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-    	self.notificationWindow.backgroundColor = [UIColor clearColor];
-	    self.notificationWindow.userInteractionEnabled = YES;
-    	self.notificationWindow.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-	    self.notificationWindow.windowLevel = UIWindowLevelStatusBar;
-    	self.notificationWindow.rootViewController = [UIViewController new];
-	}
+    self.notificationWindow = [[CWWindowContainer alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    self.notificationWindow.backgroundColor = [UIColor clearColor];
+    self.notificationWindow.userInteractionEnabled = YES;
+    self.notificationWindow.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    self.notificationWindow.windowLevel = UIWindowLevelStatusBar;
+    self.notificationWindow.rootViewController = [UIViewController new];
     self.notificationWindow.notificationHeight = [self getNotificationLabelHeight];
-}
-
-- (void)createStatusBarView
-{
-    self.statusBarView = [[UIView alloc] initWithFrame:[self getNotificationLabelFrame]];
-    self.statusBarView.clipsToBounds = YES;
-    if (self.notificationAnimationType == CWNotificationAnimationTypeReplace) {
-        UIView *statusBarImageView = [[UIScreen mainScreen] snapshotViewAfterScreenUpdates:YES];
-        [self.statusBarView addSubview:statusBarImageView];
-    }
+    
     [self.notificationWindow.rootViewController.view addSubview:self.statusBarView];
     [self.notificationWindow.rootViewController.view sendSubviewToBack:self.statusBarView];
+    
+    [self.notificationWindow.rootViewController.view addSubview:self.notificationLabel];
+    [self.notificationWindow.rootViewController.view bringSubviewToFront:self.notificationLabel];
 }
-
 # pragma mark - frame changing
 
 - (void)firstFrameChange
@@ -456,15 +454,10 @@ static void cancel_delayed_block(CWDelayedBlockHandle delayedHandle)
         // create UIWindow
         [self createNotificationWindow];
 
-        // create ScrollLabel
         [self updateNotificationLabelWithMessage:message];
 
-        // create status bar view
-        [self createStatusBarView];
+        self.statusBarView.frame = [self getNotificationLabelFrame];
 
-        // add label to window
-        [self.notificationWindow.rootViewController.view addSubview:self.notificationLabel];
-        [self.notificationWindow.rootViewController.view bringSubviewToFront:self.notificationLabel];
         [self.notificationWindow setHidden:NO];
 
         // checking for screen orientation change
@@ -499,13 +492,8 @@ static void cancel_delayed_block(CWDelayedBlockHandle delayedHandle)
         // setup view
         [self createNotificationCustomView:view];
 
-        // create status bar view
-        [self createStatusBarView];
-
-        // add view to window
-        UIView *rootView = self.notificationWindow.rootViewController.view;
-        [rootView addSubview:self.customView];
-        [rootView bringSubviewToFront:self.customView];
+        self.statusBarView.frame = [self getNotificationLabelFrame];
+        
         [self.notificationWindow setHidden:NO];
 
         // checking for screen orientation change
@@ -547,6 +535,7 @@ static void cancel_delayed_block(CWDelayedBlockHandle delayedHandle)
             self.notificationIsDismissing = NO;
             [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidChangeStatusBarOrientationNotification object:nil];
             [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillChangeStatusBarFrameNotification object:nil];
+            self.notificationLabel.transform = CGAffineTransformIdentity;
             if (completion) {
                 completion();
             }
