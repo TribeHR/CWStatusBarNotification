@@ -27,13 +27,19 @@
 - (CWStatusBarNotification *)init {
     self = [super init];
     if (self) {
-        // set defaults
         self.notificationLabel = [ScrollLabel new];
         self.notificationLabel.textAlignment = NSTextAlignmentCenter;
         self.notificationLabel.adjustsFontSizeToFitWidth = NO;
         self.notificationLabel.font = [UIFont systemFontOfSize:FONT_SIZE];
         
+        self.statusBarView = [[UIView alloc] initWithFrame:[self getNotificationLabelFrame]];
+        self.statusBarView.clipsToBounds = YES;
+        if (self.notificationAnimationType == CWNotificationAnimationTypeReplace) {
+            UIView *statusBarImageView = [[UIScreen mainScreen] snapshotViewAfterScreenUpdates:YES];
+            [self.statusBarView addSubview:statusBarImageView];
+        }
         
+        // set defaults
         self.notificationLabelBackgroundColor = [[UIApplication sharedApplication] delegate].window.tintColor;
         self.notificationLabelTextColor = [UIColor whiteColor];
         self.notificationStyle = CWNotificationStyleStatusBarNotification;
@@ -153,29 +159,20 @@
 
 - (void)createNotificationWindow
 {
-    if (!self.notificationWindow) {
-        self.notificationWindow = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-        self.notificationWindow.backgroundColor = [UIColor clearColor];
-        self.notificationWindow.userInteractionEnabled = NO;
-        self.notificationWindow.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        self.notificationWindow.windowLevel = UIWindowLevelStatusBar;
-        self.notificationWindow.rootViewController = [UIViewController new];
-    }
+    self.notificationWindow = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    self.notificationWindow.backgroundColor = [UIColor clearColor];
+    self.notificationWindow.userInteractionEnabled = NO;
+    self.notificationWindow.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    self.notificationWindow.windowLevel = UIWindowLevelStatusBar;
+    self.notificationWindow.rootViewController = [UIViewController new];
     self.notificationWindow.rootViewController.view.bounds = [self getNotificationLabelFrame];
-}
-
-- (void)createStatusBarView
-{
-    self.statusBarView = [[UIView alloc] initWithFrame:[self getNotificationLabelFrame]];
-    self.statusBarView.clipsToBounds = YES;
-    if (self.notificationAnimationType == CWNotificationAnimationTypeReplace) {
-        UIView *statusBarImageView = [[UIScreen mainScreen] snapshotViewAfterScreenUpdates:YES];
-        [self.statusBarView addSubview:statusBarImageView];
-    }
+    
     [self.notificationWindow.rootViewController.view addSubview:self.statusBarView];
     [self.notificationWindow.rootViewController.view sendSubviewToBack:self.statusBarView];
+    
+    [self.notificationWindow.rootViewController.view addSubview:self.notificationLabel];
+    [self.notificationWindow.rootViewController.view bringSubviewToFront:self.notificationLabel];
 }
-
 # pragma mark - frame changing
 
 - (void)firstFrameChange
@@ -245,16 +242,11 @@
         
         // create UIWindow
         [self createNotificationWindow];
-        
-        // create UILabel
+
         [self updateNotificationLabelWithMessage:message];
         
-        // create status bar view
-        [self createStatusBarView];
-        
-        // add label to window
-        [self.notificationWindow.rootViewController.view addSubview:self.notificationLabel];
-        [self.notificationWindow.rootViewController.view bringSubviewToFront:self.notificationLabel];
+        self.statusBarView.frame = [self getNotificationLabelFrame];
+
         [self.notificationWindow setHidden:NO];
         
         // checking for screen orientation change
@@ -292,6 +284,7 @@
             self.notificationWindow = nil;
             self.notificationIsShowing = NO;
             [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidChangeStatusBarOrientationNotification object:nil];
+            self.notificationLabel.transform = CGAffineTransformIdentity;
             if (completion) {
                 completion();
             }
