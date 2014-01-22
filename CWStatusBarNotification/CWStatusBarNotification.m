@@ -18,7 +18,7 @@
 
 @implementation CWStatusBarNotification
 
-@synthesize notificationLabel, notificationLabelBackgroundColor, notificationLabelTextColor, notificationWindow;
+@synthesize notificationLabel, notificationWindow;
 
 @synthesize statusBarView;
 
@@ -27,6 +27,18 @@
 - (CWStatusBarNotification *)init {
     self = [super init];
     if (self) {
+        self.notificationLabel = [ScrollLabel new];
+        self.notificationLabel.textAlignment = NSTextAlignmentCenter;
+        self.notificationLabel.adjustsFontSizeToFitWidth = NO;
+        self.notificationLabel.font = [UIFont systemFontOfSize:FONT_SIZE];
+        
+        self.statusBarView = [[UIView alloc] initWithFrame:[self getNotificationLabelFrame]];
+        self.statusBarView.clipsToBounds = YES;
+        if (self.notificationAnimationType == CWNotificationAnimationTypeReplace) {
+            UIView *statusBarImageView = [[UIScreen mainScreen] snapshotViewAfterScreenUpdates:YES];
+            [self.statusBarView addSubview:statusBarImageView];
+        }
+        
         // set defaults
         self.notificationLabelBackgroundColor = [[UIApplication sharedApplication] delegate].window.tintColor;
         self.notificationLabelTextColor = [UIColor whiteColor];
@@ -36,6 +48,24 @@
         self.notificationAnimationType = CWNotificationAnimationTypeReplace;
     }
     return self;
+}
+
+#pragma mark - properties
+
+- (UIColor *)notificationLabelBackgroundColor {
+    return self.notificationLabel.backgroundColor;
+}
+
+- (void)setNotificationLabelBackgroundColor:(UIColor *)notificationLabelBackgroundColor {
+    self.notificationLabel.backgroundColor = notificationLabelBackgroundColor;
+}
+
+- (UIColor *)notificationLabelTextColor {
+    return self.notificationLabel.textColor;
+}
+
+- (void)setNotificationLabelTextColor:(UIColor *)notificationLabelTextColor {
+    self.notificationLabel.textColor = notificationLabelTextColor;
 }
 
 # pragma mark - dimensions
@@ -106,16 +136,10 @@
 
 # pragma mark - display helpers
 
-- (void)createNotificationLabelWithMessage:(NSString *)message
+- (void)updateNotificationLabelWithMessage:(NSString *)message
 {
-    self.notificationLabel = [ScrollLabel new];
-    self.notificationLabel.numberOfLines = self.multiline ? 0 : 1;
     self.notificationLabel.text = message;
-    self.notificationLabel.textAlignment = NSTextAlignmentCenter;
-    self.notificationLabel.adjustsFontSizeToFitWidth = NO;
-    self.notificationLabel.font = [UIFont systemFontOfSize:FONT_SIZE];
-    self.notificationLabel.backgroundColor = self.notificationLabelBackgroundColor;
-    self.notificationLabel.textColor = self.notificationLabelTextColor;
+    self.notificationLabel.numberOfLines = self.multiline ? 0 : 1;
     switch (self.notificationAnimationInStyle) {
         case CWNotificationAnimationStyleTop:
             self.notificationLabel.frame = [self getNotificationLabelTopFrame];
@@ -142,20 +166,13 @@
     self.notificationWindow.windowLevel = UIWindowLevelStatusBar;
     self.notificationWindow.rootViewController = [UIViewController new];
     self.notificationWindow.rootViewController.view.bounds = [self getNotificationLabelFrame];
-}
-
-- (void)createStatusBarView
-{
-    self.statusBarView = [[UIView alloc] initWithFrame:[self getNotificationLabelFrame]];
-    self.statusBarView.clipsToBounds = YES;
-    if (self.notificationAnimationType == CWNotificationAnimationTypeReplace) {
-        UIView *statusBarImageView = [[UIScreen mainScreen] snapshotViewAfterScreenUpdates:YES];
-        [self.statusBarView addSubview:statusBarImageView];
-    }
+    
     [self.notificationWindow.rootViewController.view addSubview:self.statusBarView];
     [self.notificationWindow.rootViewController.view sendSubviewToBack:self.statusBarView];
+    
+    [self.notificationWindow.rootViewController.view addSubview:self.notificationLabel];
+    [self.notificationWindow.rootViewController.view bringSubviewToFront:self.notificationLabel];
 }
-
 # pragma mark - frame changing
 
 - (void)firstFrameChange
@@ -225,16 +242,11 @@
         
         // create UIWindow
         [self createNotificationWindow];
+
+        [self updateNotificationLabelWithMessage:message];
         
-        // create UILabel
-        [self createNotificationLabelWithMessage:message];
-        
-        // create status bar view
-        [self createStatusBarView];
-        
-        // add label to window
-        [self.notificationWindow.rootViewController.view addSubview:self.notificationLabel];
-        [self.notificationWindow.rootViewController.view bringSubviewToFront:self.notificationLabel];
+        self.statusBarView.frame = [self getNotificationLabelFrame];
+
         [self.notificationWindow setHidden:NO];
         
         // checking for screen orientation change
@@ -250,11 +262,17 @@
                 [completion invoke];
             });
         }];
+    } else {
+        self.notificationLabel.text = message;
     }
-
+    
 }
 
-- (void)dismissNotification
+- (void)dismissNotification {
+    [self dismissNotificationWithCompletion:nil];
+}
+
+- (void)dismissNotificationWithCompletion:(void (^)(void))completion
 {
     if (self.notificationIsShowing) {
         [self secondFrameChange];
@@ -266,6 +284,10 @@
             self.notificationWindow = nil;
             self.notificationIsShowing = NO;
             [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidChangeStatusBarOrientationNotification object:nil];
+            self.notificationLabel.transform = CGAffineTransformIdentity;
+            if (completion) {
+                completion();
+            }
         }];
     }
 }
