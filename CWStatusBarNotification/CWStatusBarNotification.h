@@ -8,8 +8,16 @@
 
 #import <Foundation/Foundation.h>
 
+typedef void(^CWCompletionBlock)(void);
+
 @interface ScrollLabel : UILabel
 - (CGFloat)scrollTime;
+@end
+
+@interface CWWindowContainer : UIWindow
+
+@property (assign, nonatomic) CGFloat notificationHeight;
+
 @end
 
 @interface CWStatusBarNotification : NSObject
@@ -34,22 +42,29 @@ typedef NS_ENUM(NSInteger, CWNotificationAnimationType) {
 @property (strong, nonatomic) ScrollLabel *notificationLabel;
 @property (strong, nonatomic) UIColor *notificationLabelBackgroundColor;
 @property (strong, nonatomic) UIColor *notificationLabelTextColor;
+@property (strong, nonatomic) UIFont *notificationLabelFont;
 @property (assign, nonatomic) CGFloat notificationLabelHeight;
+@property (strong, nonatomic) UIView *customView;
 @property (assign, nonatomic) BOOL multiline;
 
 @property (strong, nonatomic) UIView *statusBarView;
 
-@property (nonatomic) CWNotificationAnimationStyle notificationStyle;
+@property (copy, nonatomic) CWCompletionBlock notificationTappedBlock;
+
+@property (nonatomic) CWNotificationStyle notificationStyle;
 @property (nonatomic) CWNotificationAnimationStyle notificationAnimationInStyle;
 @property (nonatomic) CWNotificationAnimationStyle notificationAnimationOutStyle;
 @property (nonatomic) CWNotificationAnimationType notificationAnimationType;
 @property (nonatomic) BOOL notificationIsShowing;
+@property (nonatomic) BOOL notificationIsDismissing;
 
-@property (strong, nonatomic) UIWindow *notificationWindow;
+@property (strong, nonatomic) CWWindowContainer *notificationWindow;
 
 - (void)displayNotificationWithMessage:(NSString *)message forDuration:(CGFloat)duration;
 - (void)displayNotificationWithMessage:(NSString *)message completion:(void (^)(void))completion;
+- (void)displayNotificationWithView:(UIView *)view forDuration:(CGFloat)duration;
+- (void)displayNotificationWithView:(UIView *)view completion:(void (^)(void))completion;
 - (void)dismissNotification;
-- (void)dismissNotificationWithCompletion:(void (^)(void))completion;
+- (void)dismissNotificationWithCompletion:(void(^)(void))completion;
 
 @end

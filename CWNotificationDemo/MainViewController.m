@@ -36,8 +36,12 @@
     NSDictionary *attributes = [NSDictionary dictionaryWithObject:font forKey:NSFontAttributeName];
     [self.segFromStyle setTitleTextAttributes:attributes forState:UIControlStateNormal];
     [self.segToStyle setTitleTextAttributes:attributes forState:UIControlStateNormal];
+    
     // initialize CWNotification
     self.notification = [CWStatusBarNotification new];
+    
+    // set default blue color (since iOS 7.1, default window tintColor is black)
+    self.notification.notificationLabelBackgroundColor = [UIColor colorWithRed:0.0 green:122.0/255.0 blue:1.0 alpha:1.0];
 }
 
 - (void)didReceiveMemoryWarning
@@ -58,11 +62,24 @@
 
 # pragma mark - show notification
 
-- (IBAction)btnShowNotificationPressed:(UIButton *)sender
+- (void)setupNotification
 {
     self.notification.notificationAnimationInStyle = self.segFromStyle.selectedSegmentIndex;
     self.notification.notificationAnimationOutStyle = self.segToStyle.selectedSegmentIndex;
+    self.notification.notificationStyle = self.notificationStyle.selectedSegmentIndex == 0 ?
+    CWNotificationStyleStatusBarNotification : CWNotificationStyleNavigationBarNotification;
+}
+
+- (IBAction)btnShowNotificationPressed:(UIButton *)sender
+{
+    [self setupNotification];
     [self.notification displayNotificationWithMessage:self.txtNotificationMessage.text forDuration:self.sliderDuration.value];
+}
+
+- (IBAction)btnShowCustomNotificationPressed:(UIButton *)sender {
+    [self setupNotification];
+    UIView *view = [[NSBundle mainBundle] loadNibNamed:@"CustomView" owner:nil options:nil][0];
+    [self.notification displayNotificationWithView:view forDuration:self.sliderDuration.value];
 }
 
 @end
