@@ -119,6 +119,7 @@ static void cancel_delayed_block(CWDelayedBlockHandle delayedHandle)
 - (void)drawTextInRect:(CGRect)rect
 {
     if ([self scrollOffset] > 0) {
+        textImage.transform = CGAffineTransformIdentity;
         rect.size.width = [self fullWidth] + PADDING * 2;
         UIGraphicsBeginImageContextWithOptions(rect.size, NO, [UIScreen mainScreen].scale);
         [super drawTextInRect:rect];
